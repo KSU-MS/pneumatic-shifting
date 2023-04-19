@@ -84,7 +84,7 @@ void loop()
     digitalWrite(nls, HIGH);
     digitalWrite(up, HIGH);
     // Serial.println("insideuploop");
-     delay(200);
+     delay(300);
     countup++;
   }
 
