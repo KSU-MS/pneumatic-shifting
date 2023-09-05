@@ -8,10 +8,10 @@ int launch = 10;
 int nls = 11;
 int LaunchButton = 22;
 int Paddles = 23;
-int shift_state = 0;
+int shift_state;
 
 void setup() {
-  Serial.begin(9600);
+  // Serial.begin(9600);
 
   // Init pins for LED, Shifting, "Launch Control" & No-lift shift
   pinMode(led, OUTPUT);
@@ -20,11 +20,40 @@ void setup() {
   pinMode(clutch, OUTPUT);
   pinMode(launch, OUTPUT);
   pinMode(nls, OUTPUT);
+
+  shift_state = 4;
+}
+
+void Wait() {
+  // Serial.println("Wait");
+  digitalWrite(down, LOW);
+  digitalWrite(up, LOW);
+  digitalWrite(nls, LOW);
+  digitalWrite(clutch, LOW);
+  digitalWrite(launch, LOW);
+}
+
+void Hold(int PaddleValue) {
+  while (PaddleValue < 145) {
+    Serial.println("Hold");
+    delay(100);
+    PaddleValue = digitalRead(PaddleValue);
+    Wait();
+  }
+}
+
+void Read(int PaddleValue, int LaunchValue) {
+  if (PaddleValue < 145) {
+    shift_state = 1;
+  } else if (LaunchValue > 115 && LaunchValue < 126) {
+    shift_state = 3;
+  } else {
+    shift_state = 4;
+  }
 }
 
 // Launch function
-void Launch() {
-  int LaunchValue = analogRead(LaunchButton);
+void Launch(int LaunchValue) {
   while (LaunchValue > 115 && LaunchValue < 126) {
     digitalWrite(clutch, HIGH);
     digitalWrite(launch, HIGH);
@@ -34,6 +63,25 @@ void Launch() {
   digitalWrite(launch, LOW);
   delay(2000);
   digitalWrite(clutch, LOW);
+}
+
+void ShiftDown() {
+  // Serial.println("Inside down function");
+  digitalWrite(clutch, HIGH);
+  digitalWrite(launch, HIGH);
+  delay(100);
+  digitalWrite(down, HIGH);
+  delay(100);
+  digitalWrite(clutch, LOW);
+  delay(100);
+  digitalWrite(launch, LOW);
+}
+
+void ShiftUp() {
+  // Serial.println("Inside up function");
+  digitalWrite(nls, HIGH);
+  digitalWrite(up, HIGH);
+  delay(300);
 }
 
 void loop() {
@@ -53,60 +101,36 @@ void loop() {
   switch (shift_state) {
   // Read state
   case 0:
-    if (PaddleValue < 145) {
-      shift_state = 1;
-    } else if (LaunchValue < 145) {
-      shift_state = 3;
-    } else {
-      shift_state = 4;
-    }
+    Read(PaddleValue, LaunchValue);
+    break;
 
   // Shift state
   case 1:
-    if (PaddleValue > 108 && PaddleValue < 117) {
-      // Serial.println("Inside up case");
-      digitalWrite(nls, HIGH);
-      digitalWrite(up, HIGH);
-      delay(300);
+    if (PaddleValue > 107 && PaddleValue < 117) {
+      ShiftUp();
       shift_state = 2;
     } else {
-      // Serial.println("Inside down case");
-      digitalWrite(clutch, HIGH);
-      digitalWrite(launch, HIGH);
-      delay(100);
-      digitalWrite(down, HIGH);
-      delay(100);
-      digitalWrite(clutch, LOW);
-      delay(100);
-      digitalWrite(launch, LOW);
+      ShiftDown();
       shift_state = 2;
     }
+    break;
 
   // Hold state
   case 2:
-    while (PaddleValue < 145) {
-      // Serial.println("Holding shift");
-      delay(100);
-      shift_state = 2;
-    }
-    shift_state = 0;
+    Hold(PaddleValue);
+    shift_state = 4;
+    break;
 
   // Launch state
   case 3:
-    // Serial.println("Launch");
-    digitalWrite(led, HIGH);
-    Launch();
-    digitalWrite(led, LOW);
-    shift_state = 0;
+    Launch(LaunchValue);
+    shift_state = 4;
+    break;
 
-  // Default state
+  // Wait state
   case 4:
-    // Serial.println("Waiting for input");
-    digitalWrite(down, LOW);
-    digitalWrite(up, LOW);
-    digitalWrite(nls, LOW);
-    digitalWrite(clutch, LOW);
-    digitalWrite(launch, LOW);
+    Wait();
     shift_state = 0;
+    break;
   }
 }
