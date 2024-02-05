@@ -26,9 +26,7 @@ union {
 } total_shifts;
 
 void setup() {
-#ifdef DEBUG_MODE
   Serial.begin(9600);
-#endif
 
   // Init pins for LED, Shifting, "Launch Control" & No-lift shift
   pinMode(led, OUTPUT);
@@ -41,10 +39,12 @@ void setup() {
   shift_state = 3;
   digitalWrite(led, HIGH);
 
+  // Reset shifts uncomment and push to set value to zero
+  // EEPROM.put(0, total_shifts.i);
+
   // Read the amount of shifts out of memory
-  for (int i = 0; i < 2; i++) {
-    total_shifts.b[i] = EEPROM.read(i);
-  }
+  EEPROM.get(0, total_shifts.i);
+  Serial.println(total_shifts.i);
 }
 
 void Read(int PaddleValue, int LaunchValue) {
@@ -130,9 +130,10 @@ void loop() {
   // an EEPROM write takes 3.3 ms to complete, and I didn't want it to block up
   // the state machine
   if (write_timer.check()) {
-    for (int i = 0; i < 2; i++) {
-      EEPROM.write(i, total_shifts.b[i]);
-    }
+    // for (int i = 0; i < 2; i++) {
+    //   EEPROM.write(i, total_shifts.b[i]);
+    // }
+    EEPROM.update(0, total_shifts.i);
   }
 
   switch (shift_state) {
