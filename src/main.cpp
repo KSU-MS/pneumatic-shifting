@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <EEPROM.h>
+#include <Metro.h>
 
 // Pins
 int led = 13;
@@ -11,8 +13,17 @@ int LaunchButton = 22;
 int Paddles = 23;
 
 // Other variables
-int shift_state;
 // #define DEBUG_MODE
+int shift_state;
+Metro write_timer = Metro(1000);
+
+// Currently only using a uint16_t and two bytes, which is still good up to
+// 65535 and makes this code more complecated than it needs to be, but wanted to
+// show how it works with unions for encoding any data type
+union {
+  uint16_t i;
+  byte b[2];
+} total_shifts;
 
 void setup() {
 #ifdef DEBUG_MODE
@@ -29,6 +40,11 @@ void setup() {
 
   shift_state = 3;
   digitalWrite(led, HIGH);
+
+  // Read the amount of shifts out of memory
+  for (int i = 0; i < 2; i++) {
+    total_shifts.b[i] = EEPROM.read(i);
+  }
 }
 
 void Read(int PaddleValue, int LaunchValue) {
@@ -52,21 +68,6 @@ void Wait() {
   digitalWrite(launch, LOW);
 }
 
-// Launch function
-void Launch(int LaunchValue) {
-  while (LaunchValue > 115 && LaunchValue < 126) {
-    digitalWrite(clutch, HIGH);
-    digitalWrite(launch, HIGH);
-    LaunchValue = analogRead(LaunchButton);
-  }
-#ifdef DEBUG_MODE
-  Serial.println("Go fast");
-#endif
-  digitalWrite(launch, LOW);
-  delay(2000);
-  digitalWrite(clutch, LOW);
-}
-
 void ShiftDown(int PaddleValue) {
 #ifdef DEBUG_MODE
   Serial.println("Inside down function");
@@ -81,7 +82,7 @@ void ShiftDown(int PaddleValue) {
   digitalWrite(launch, LOW);
   while (PaddleValue < 145) {
 #ifdef DEBUG_MODE
-    Serial.println("Hold");
+    Serial.println("Down is being held");
 #endif
     Wait();
     PaddleValue = analogRead(Paddles);
@@ -97,11 +98,26 @@ void ShiftUp(int PaddleValue) {
   delay(300);
   while (PaddleValue < 145) {
 #ifdef DEBUG_MODE
-    Serial.println("Hold");
+    Serial.println("Up is being held");
 #endif
     Wait();
     PaddleValue = analogRead(Paddles);
   }
+}
+
+// Launch function
+void Launch(int LaunchValue) {
+  while (LaunchValue > 115 && LaunchValue < 126) {
+    digitalWrite(clutch, HIGH);
+    digitalWrite(launch, HIGH);
+    LaunchValue = analogRead(LaunchButton);
+  }
+#ifdef DEBUG_MODE
+  Serial.println("Go fast");
+#endif
+  digitalWrite(launch, LOW);
+  delay(2000);
+  digitalWrite(clutch, LOW);
 }
 
 void loop() {
@@ -109,10 +125,15 @@ void loop() {
   int LaunchValue = analogRead(LaunchButton);
   int PaddleValue = analogRead(Paddles);
 
-  // 152 is stock reading
-  // 121 is the Launch Button
-  // 112 is the Up Paddle
-  // 101 is the Down Paddle
+  // Write the total amount of shifts if timer has ticked, this is done because
+  // according to this https://docs.arduino.cc/learn/built-in-libraries/eeprom/,
+  // an EEPROM write takes 3.3 ms to complete, and I didn't want it to block up
+  // the state machine
+  if (write_timer.check()) {
+    for (int i = 0; i < 2; i++) {
+      EEPROM.write(i, total_shifts.b[i]);
+    }
+  }
 
   switch (shift_state) {
   // Read state
@@ -125,9 +146,16 @@ void loop() {
 #ifdef DEBUG_MODE
     Serial.println(PaddleValue);
 #endif
+
+    // 152 is stock reading
+    // 121 is the Launch Button
+    // 112 is the Up Paddle
+    // 101 is the Down Paddle
     if (PaddleValue > 107 && PaddleValue < 117) {
+      total_shifts.i += 1;
       ShiftUp(PaddleValue);
     } else if (PaddleValue > 96 && PaddleValue < 106) {
+      total_shifts.i += 1;
       ShiftDown(PaddleValue);
     } else {
 #ifdef DEBUG_MODE
