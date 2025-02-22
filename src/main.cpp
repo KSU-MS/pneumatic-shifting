@@ -3,88 +3,73 @@
 uint16_t Paddle_Value;
 uint16_t Launch_Value;
 
+void PinReset(){ 
+    digitalWrite(UP_PIN, LOW);
+    digitalWrite(NO_LIFT_SHIFT, LOW);
+    digitalWrite(DOWN_PIN, LOW);
+    digitalWrite(CLUTCH_PIN, LOW);
+    digitalWrite(LAUNCH_CONTROL, LOW);
+}
+
 //TEMPORARY VARIABLES, WILL BE SET UP OR REMOVED ONCE SIGNAL STRENGTHS ARE FOUND
 int AcceptedLaunchValue = 1;
 int AcceptedPaddleValueUp = 1;
 int AcceptedPaddleValueDown = 1;
 int c = 0;
 
-//Reset for up shifts
-void upPinReset(){ 
-    digitalWrite(UP_PIN, LOW);
-    digitalWrite(NO_LIFT_SHIFT, LOW);
-}
+class state_machine{
+    private:
+    enum states{
+        rest,
+        up_shift,
+        down_shift,
+        launch
+    };
+    states current_state = rest;
+    
+    public:
+    void state_machine::nextState();
 
-//Reset for down shifts
-void downPinReset(){
-    digitalWrite(DOWN_PIN, LOW);
-    digitalWrite(CLUTCH_PIN, LOW);
-}
+};
+
+void state_machine::nextState(){
+    switch (this->current_state){
+    case rest:
+        Launch_Value = analogRead(LAUNCH_BUTTON_SIGNAL);
+        Paddle_Value = analogRead(PADDLE_SIGNAL);
+        if (Launch_Value = AcceptedLaunchValue){
+            current_state = launch;
+        }
+        else if (Paddle_Value == AcceptedPaddleValueUp){
+            current_state = up_shift;
+        }
+        else if (Paddle_Value == AcceptedPaddleValueDown){
+            current_state = down_shift;
+        }
+        else{
+            current_state = rest;
+        }
+        break;
+    case launch:
+        
+        break;
+    case up_shift:
+
+        break;
+    case down_shift:
+        
+        break;
+    default: 
+        Paddle_Value = rest;
+        break;
+    }
+};
+
 
 void setup(){
-    pinMode(UP_PIN, OUTPUT);
-    pinMode(NO_LIFT_SHIFT, OUTPUT);
-    pinMode(LAUNCH_CONTROL, OUTPUT);
-    pinMode(DOWN_PIN, OUTPUT);
-    pinMode(CLUTCH_PIN, OUTPUT);
-
-    //Low Pin Setup to prevent accidental shifts
-    digitalWrite(UP_PIN, LOW);
-    digitalWrite(NO_LIFT_SHIFT, LOW);
-    digitalWrite(LAUNCH_CONTROL,LOW);
-    digitalWrite(DOWN_PIN,LOW);
-    digitalWrite(CLUTCH_PIN,LOW);
 
 }
 
 void loop(){
-    //Button Reads
-    Paddle_Value = analogRead(PADLE_SIGNAL);
-    Launch_Value = analogRead(LAUNCH_BUTTON_SIGNAL);
-    
-    //Launch Control
-    while (Launch_Value == AcceptedLaunchValue /*Temp*/){
-        digitalWrite(CLUTCH_PIN, HIGH);
-        Launch_Value = analogRead(LAUNCH_BUTTON_SIGNAL); /*Re-reads the button to update the signal and see if it is still pressed*/
-    }
-    digitalWrite(CLUTCH_PIN,LOW);
 
-    //Paddle Shifting Up
-    while (Paddle_Value == AcceptedPaddleValueUp /*Temp*/){ 
-        digitalWrite(NO_LIFT_SHIFT, HIGH);
-        digitalWrite(UP_PIN, HIGH);
-        int upSignal = analogRead(UP_SIGNAL);
-        //Loop to wait for the cylinder to reach up
-        while (upSignal != 1 /*Temp*/){
-            upSignal = analogRead(UP_SIGNAL);
-            Serial.print("Waiting on pin to reach height");
-            c = c + 1;
-            //Safety Measure in case the sensor never reads the value and prevents infinite loop.
-            if (c == 100000 /*Temp, Value To Be Decided Later*/){
-                c = 0;
-                break;
-            }
-        }
-    }
-    upPinReset();
-    
-    //Paddle Shifting Down
-    while (Paddle_Value == AcceptedPaddleValueDown /*Temp*/){
-        digitalWrite(CLUTCH_PIN, HIGH);
-        digitalWrite(DOWN_PIN, HIGH);
-        int downSignal = analogRead(DOWN_SIGNAL);
-        //Loop to wait for the cylinder to reach up
-        while (downSignal != 1 /*Temp*/){
-            downSignal = analogRead(DOWN_SIGNAL);
-            Serial.print("Waiting on pin to reach height");
-            c = c + 1;
-            //Safety Measure in case the sensor never reads the value and prevents infinite loop.
-            if (c = 100000 /*Temp, Value To Be Decided Later*/){
-                c = 0;
-                break;
-            }
-        }
-    }
-    downPinReset(); //Reseting the down pins
-
-}
+};
