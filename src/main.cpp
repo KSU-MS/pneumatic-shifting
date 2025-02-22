@@ -29,7 +29,6 @@ class state_machine{
     
     public:
     void state_machine::nextState();
-
 };
 
 void state_machine::nextState(){
@@ -51,13 +50,32 @@ void state_machine::nextState(){
         }
         break;
     case launch:
-        
+        digitalWrite(CLUTCH_PIN, HIGH);
+        while (Launch_Value == AcceptedLaunchValue){
+            serial_print("Waiting for button to be let go of");
+            Launch_Value = analogRead(LAUNCH_BUTTON_SIGNAL);
+        }
+        Paddle_Value = rest;
         break;
     case up_shift:
-
+        digitalWrite(NO_LIFT_SHIFT, HIGH);
+        digitalWrite(UP_PIN, HIGH);
+        //ADD WAIT FUNCTION DOWN TO UP PIN HEIGHT TIME (WILL WORRY ABOUT LATER)
+        while (Paddle_Value == AcceptedPaddleValueUp){
+            serial_print("Waiting for up paddle to be let go of");
+            Paddle_Value == analogRead(PADDLE_SIGNAL);
+        }
+        Paddle_Value = rest;
         break;
     case down_shift:
-        
+        digitalWrite(CLUTCH_PIN, HIGH);
+        digitalWrite(DOWN_PIN, HIGH);
+        //ADD WAIT FUNCTION DOWN TO DOWN PIN HEIGHT TIME (WILL WORRY ABOUT LATER)
+        while (Paddle_Value == AcceptedPaddleValueDown){
+            serial_print("Waiting for down paddle to be let go of");
+            Paddle_Value == analogRead(PADDLE_SIGNAL);
+        }
+        Paddle_Value = rest;
         break;
     default: 
         Paddle_Value = rest;
@@ -65,11 +83,15 @@ void state_machine::nextState(){
     }
 };
 
-
 void setup(){
-
+    pinMode(UP_PIN, OUTPUT);
+    pinMode(NO_LIFT_SHIFT, OUTPUT);
+    pinMode(LAUNCH_CONTROL, OUTPUT);
+    pinMode(DOWN_PIN, OUTPUT);
+    pinMode(CLUTCH_PIN, OUTPUT);
 }
 
 void loop(){
-
+    state_machine();
+    PinReset(); //end of loop
 };

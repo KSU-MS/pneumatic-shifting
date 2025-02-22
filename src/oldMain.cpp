@@ -71,7 +71,6 @@ void setup(){
     digitalWrite(LAUNCH_CONTROL,LOW);
     digitalWrite(DOWN_PIN,LOW);
     digitalWrite(CLUTCH_PIN,LOW);
-
 }
 
 void loop(){
@@ -123,5 +122,4 @@ void loop(){
         }
     }
     downPinReset(); //Reseting the down pins
-
 }
